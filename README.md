@@ -32,3 +32,11 @@ Then you can run the script as you would any python program
 ```bash
 python slack2linkedin.py
 ```
+
+#### pipx
+
+To run the script with temporary dependencies run
+
+```bash
+pipx run --spec emoji,beautifulsoup4,PyQt5 python slack2linkedin.py
+```
