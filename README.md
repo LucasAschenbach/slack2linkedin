@@ -33,7 +33,7 @@ Then you can run the script as you would any python program
 python slack2linkedin.py
 ```
 
-#### pipx
+### pipx
 
 To run the script with temporary dependencies run
 
