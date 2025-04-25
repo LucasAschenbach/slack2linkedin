@@ -4,7 +4,6 @@
 # ///
 
 """
-slack2linkedin.py – v2
 Convert whatever Slack put on your clipboard (HTML → RTF → plain)
 into a LinkedIn-friendly plain-text snippet:
 
