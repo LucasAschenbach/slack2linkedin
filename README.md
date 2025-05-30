@@ -53,3 +53,5 @@ Open your browser at `http://127.0.0.1:5000` and use the **Convert** button to
 grab the clipboard text and convert it. The resulting text is shown in a
 textarea where it can be edited. Clicking **Copy to clipboard** writes the
 content back to your clipboard.
+A static version of the web frontend is available in the `docs/` directory and can be hosted on GitHub Pages. The page runs the same `slack2linkedin.py` code in Pyodide, so no backend is required. After enabling GitHub Pages for the repository, navigate to `https://<your-username>.github.io/<your-repo>/` to use the converter directly in your browser.
+

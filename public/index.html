@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <title>Slack2LinkedIn</title>
+    <style>
+        body {
+            font-family: -apple-system, system-ui, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', 'Fira Sans', Ubuntu, Oxygen, 'Oxygen Sans', Cantarell, 'Droid Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Lucida Grande', Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 20px 0;
+            background-color: #f3f2ef;
+            color: rgba(0,0,0,0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 0 0 1px rgba(0,0,0,.15), 0 2px 3px rgba(0,0,0,.2);
+            width: 100%;
+            max-width: 550px;
+            box-sizing: border-box;
+        }
+        h1 {
+            color: rgba(0,0,0,0.9);
+            font-size: 28px;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        textarea {
+            width: 100%;
+            box-sizing: border-box;
+            height: 180px;
+            margin-top: 16px;
+            padding: 10px 12px;
+            border: 1px solid rgba(0,0,0,0.15);
+            border-radius: 4px;
+            font-size: 12px;
+            line-height: 1.5;
+            resize: vertical;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: #0073b1;
+            box-shadow: 0 0 0 1px #0073b1;
+        }
+        button {
+            margin-top: 16px;
+            padding: 10px 18px;
+            background-color: #0073b1;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background-color 0.2s ease-in-out;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        button:hover {
+            background-color: #006097;
+        }
+        button:disabled {
+            background-color: #a0a0a0;
+            color: #e0e0e0;
+            cursor: not-allowed;
+        }
+        .button-group {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+        #convert {
+             width: 100%;
+             margin-bottom: 8px;
+        }
+        .toast {
+            visibility: hidden;
+            min-width: 250px;
+            margin-left: -125px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 4px;
+            padding: 16px;
+            position: fixed;
+            z-index: 1;
+            left: 50%;
+            bottom: 30px;
+            font-size: 17px;
+        }
+        .toast.show {
+            visibility: visible;
+            -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
+            animation: fadein 0.5s, fadeout 0.5s 2.5s;
+        }
+        @-webkit-keyframes fadein {
+            from {bottom: 0; opacity: 0;}
+            to {bottom: 30px; opacity: 1;}
+        }
+        @keyframes fadein {
+            from {bottom: 0; opacity: 0;}
+            to {bottom: 30px; opacity: 1;}
+        }
+        @-webkit-keyframes fadeout {
+            from {bottom: 30px; opacity: 1;}
+            to {bottom: 0; opacity: 0;}
+        }
+        @keyframes fadeout {
+            from {bottom: 30px; opacity: 1;}
+            to {bottom: 0; opacity: 0;}
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Slack2LinkedIn</h1>
+        <button id='convert'>Convert Slack Text from Clipboard</button>
+        <textarea id='text' placeholder="Your converted LinkedIn-style post will appear here..."></textarea>
+        <div class="button-group">
+            <button id='copy' disabled>Copy to Clipboard</button>
+        </div>
+    </div>
+    <div id="toast" class="toast">Copied to clipboard!</div>
+
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
+    <script type="text/python" id="pycode">
+import slack2linkedin
+    </script>
+    <script>
+        const textElement = document.getElementById('text');
+        const copyButton = document.getElementById('copy');
+        const convertButton = document.getElementById('convert');
+        const toastElement = document.getElementById('toast');
+
+        let pyodideReadyPromise = null;
+        async function initPyodide() {
+            if (pyodideReadyPromise) return pyodideReadyPromise;
+            pyodideReadyPromise = (async () => {
+                let pyodide = await loadPyodide();
+                await pyodide.loadPackage('micropip');
+                await pyodide.runPythonAsync("import micropip\nawait micropip.install(['emoji','beautifulsoup4'])");
+                const code = document.getElementById('pycode').textContent;
+                pyodide.globals.set('code_str', code);
+                await pyodide.runPythonAsync('exec(code_str)');
+                return pyodide;
+            })();
+            return pyodideReadyPromise;
+        }
+
+        function updateCopyButtonState() {
+            if (textElement.value.trim() === '') {
+                copyButton.disabled = true;
+            } else {
+                copyButton.disabled = false;
+            }
+        }
+
+        convertButton.onclick = async function() {
+            const pyodide = await initPyodide();
+            let htmlText = null;
+            try {
+                const items = await navigator.clipboard.read();
+                for (const item of items) {
+                    if (item.types.includes('text/html')) {
+                        const blob = await item.getType('text/html');
+                        htmlText = await blob.text();
+                        break;
+                    }
+                }
+            } catch (e) {
+                // reading HTML failed, fallback to plain text below
+            }
+            let plainText = null;
+            if (!htmlText) {
+                plainText = await navigator.clipboard.readText();
+            }
+            let result;
+            if (htmlText) {
+                pyodide.globals.set('input_html', htmlText);
+                result = pyodide.runPython('slack2linkedin.convert_html(input_html)');
+            } else {
+                pyodide.globals.set('input_text', plainText);
+                result = pyodide.runPython('slack2linkedin.convert_plain(input_text)');
+            }
+            textElement.value = result;
+            updateCopyButtonState();
+        };
+        copyButton.onclick = function() {
+            navigator.clipboard.writeText(textElement.value);
+            toastElement.className = "toast show";
+            setTimeout(function(){ toastElement.className = toastElement.className.replace("show", ""); }, 3000);
+        };
+        textElement.addEventListener('input', updateCopyButtonState);
+        updateCopyButtonState();
+    </script>
+</body>
+</html>

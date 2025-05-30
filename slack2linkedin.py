@@ -11,13 +11,13 @@ into a LinkedIn-friendly plain-text snippet:
  • replaces :emoji: codes *and* Slack <img …> emoji stubs with real emoji
  • puts the cleaned text back on the clipboard and prints it
 
-Requires:  PyQt5  beautifulsoup4  emoji    →  pip install PyQt5 bs4 emoji
+Only the ``convert_clipboard`` helper requires PyQt5. The ``convert_plain``
+and ``convert_html`` functions work in any Python environment, including
+Pyodide.
 """
 
 import re, sys, html
-from PyQt5.QtWidgets import QApplication
-from PyQt5.QtCore    import QMimeData
-from bs4             import BeautifulSoup, NavigableString, Tag
+from bs4 import BeautifulSoup, NavigableString, Tag
 import emoji
 
 # ───── Unicode style maps ────────────────────────────────────────────────────
@@ -50,7 +50,7 @@ def _emojize(txt: str) -> str:
     return emoji.emojize(txt, language="alias", delimiters=(":",":"))
 
 # ───── Clipboard fallbacks ───────────────────────────────────────────────────
-def _convert_plain(src: str) -> str:
+def convert_plain(src: str) -> str:
     return _emojize(src)
 
 def _convert_rtf(src: bytes) -> str:
@@ -71,7 +71,7 @@ def _convert_rtf(src: bytes) -> str:
     s = re.sub(r"[{}]", "", s)
     return s
 
-def _convert_html(src: str) -> str:
+def convert_html(src: str) -> str:
     soup = BeautifulSoup(src, "html.parser")
 
     def _emoji_from_img(tag: Tag) -> str:
@@ -117,16 +117,19 @@ def _convert_html(src: str) -> str:
 # ───── Main entry-point ─────────────────────────────────────────────────────
 def convert_clipboard():
     """Convert the current clipboard content and update the clipboard."""
+    from PyQt5.QtWidgets import QApplication
+    from PyQt5.QtCore import QMimeData
+
     app = QApplication.instance() or QApplication(sys.argv)
     cb = app.clipboard()
     md = cb.mimeData()
 
     if md.hasHtml():
-        txt, src = _convert_html(md.html()), "HTML"
+        txt, src = convert_html(md.html()), "HTML"
     elif md.hasFormat("text/rtf"):
         txt, src = _convert_rtf(bytes(md.data("text/rtf"))), "RTF"
     else:
-        txt, src = _convert_plain(md.text()), "plain"
+        txt, src = convert_plain(md.text()), "plain"
 
     clip = QMimeData()
     clip.setText(txt)
