@@ -131,7 +131,7 @@
 
     <script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
     <script type="text/python" id="pycode">
-import slack2linkedin
+import convert as s2l
     </script>
     <script>
         const textElement = document.getElementById('text');
@@ -145,7 +145,16 @@ import slack2linkedin
             pyodideReadyPromise = (async () => {
                 let pyodide = await loadPyodide();
                 await pyodide.loadPackage('micropip');
-                await pyodide.runPythonAsync("import micropip\nawait micropip.install(['emoji','beautifulsoup4'])");
+                await pyodide.runPythonAsync(`
+import micropip
+await micropip.install(['emoji','beautifulsoup4'])
+`);
+
+                // Fetch the Python script and write it to Pyodide's file system
+                const pythonScriptResponse = await fetch('../slack2linkedin/convert.py');
+                const pythonScriptText = await pythonScriptResponse.text();
+                pyodide.FS.writeFile('convert.py', pythonScriptText);
+
                 const code = document.getElementById('pycode').textContent;
                 pyodide.globals.set('code_str', code);
                 await pyodide.runPythonAsync('exec(code_str)');
@@ -184,10 +193,10 @@ import slack2linkedin
             let result;
             if (htmlText) {
                 pyodide.globals.set('input_html', htmlText);
-                result = pyodide.runPython('slack2linkedin.convert_html(input_html)');
+                result = pyodide.runPython('s2l.convert_html(input_html)');
             } else {
                 pyodide.globals.set('input_text', plainText);
-                result = pyodide.runPython('slack2linkedin.convert_plain(input_text)');
+                result = pyodide.runPython('s2l.convert_plain(input_text)');
             }
             textElement.value = result;
             updateCopyButtonState();

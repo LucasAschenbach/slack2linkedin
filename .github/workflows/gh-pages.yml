@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
-      - run: cp slack2linkedin.py public/
+      - run: cp slack2linkedin/convert.py public/
       - uses: actions/upload-pages-artifact@v3
         with:
           path: public
