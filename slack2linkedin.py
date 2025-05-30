@@ -115,10 +115,11 @@ def _convert_html(src: str) -> str:
     return walk(soup).rstrip()
 
 # ───── Main entry-point ─────────────────────────────────────────────────────
-def main():
-    app = QApplication(sys.argv)
-    cb  = app.clipboard()
-    md  = cb.mimeData()
+def convert_clipboard():
+    """Convert the current clipboard content and update the clipboard."""
+    app = QApplication.instance() or QApplication(sys.argv)
+    cb = app.clipboard()
+    md = cb.mimeData()
 
     if md.hasHtml():
         txt, src = _convert_html(md.html()), "HTML"
@@ -131,6 +132,11 @@ def main():
     clip.setText(txt)
     cb.setMimeData(clip)
 
+    return txt, src
+
+
+def main():
+    txt, src = convert_clipboard()
     sys.stdout.write(f"[{src}] → plain text now on clipboard\n\n")
     sys.stdout.write(txt + "\n")
 

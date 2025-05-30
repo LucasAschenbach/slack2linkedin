@@ -40,3 +40,16 @@ To run the script with temporary dependencies run
 ```bash
 pipx run --spec emoji,beautifulsoup4,PyQt5 python slack2linkedin.py
 ```
+
+### Web Frontend
+
+To start a small local web interface run
+
+```bash
+python web_frontend.py
+```
+
+Open your browser at `http://127.0.0.1:5000` and use the **Convert** button to
+grab the clipboard text and convert it. The resulting text is shown in a
+textarea where it can be edited. Clicking **Copy to clipboard** writes the
+content back to your clipboard.
